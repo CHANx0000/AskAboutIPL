@@ -1,30 +1,16 @@
 <div class="chat-page">
-  <!-- Header -->
-  <header class="chat-header">
-    <div class="chat-header-left">
-      <div class="ai-avatar-sm">AI</div>
-      <div>
-        <h2 class="chat-title">AI Assistant</h2>
-        <span class="chat-status">
-          <span class="status-dot"></span>
-          Ready
-        </span>
-      </div>
-    </div>
-    <button class="btn-new-chat" (click)="clearChat()">
-      <svg viewBox="0 0 24 24" fill="currentColor">
-        <path d="M19 11h-6V5h-2v6H5v2h6v6h2v-6h6z" />
-      </svg>
-      New Chat
-    </button>
-  </header>
-
   <!-- Messages -->
   <div class="messages-container">
     @for (message of messages(); track message.id) {
       <div class="message-row" [class.user-row]="message.role === 'user'">
+
         @if (message.role === 'assistant') {
-          <div class="avatar ai-avatar">AI</div>
+          <div class="avatar ai-avatar">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="9" r="3.5" fill="white"/>
+              <path d="M5 20c0-4 3.1-7 7-7s7 3 7 7" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/>
+            </svg>
+          </div>
         }
 
         <div
@@ -36,21 +22,20 @@
           <span class="message-time">{{ message.timestamp | date: 'shortTime' }}</span>
         </div>
 
-        @if (message.role === 'user') {
-          <div class="avatar user-avatar">You</div>
-        }
       </div>
     }
 
-    <!-- Typing indicator -->
     @if (isLoading()) {
       <div class="message-row">
-        <div class="avatar ai-avatar">AI</div>
+        <div class="avatar ai-avatar">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="9" r="3.5" fill="white"/>
+            <path d="M5 20c0-4 3.1-7 7-7s7 3 7 7" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/>
+          </svg>
+        </div>
         <div class="assistant-message typing-bubble">
           <div class="typing-indicator">
-            <span></span>
-            <span></span>
-            <span></span>
+            <span></span><span></span><span></span>
           </div>
         </div>
       </div>
@@ -66,7 +51,7 @@
         [(ngModel)]="inputText"
         (keydown)="onKeydown($event)"
         (input)="autoResize($event)"
-        placeholder="Message AI Assistant… (Enter to send, Shift+Enter for new line)"
+        placeholder="Ask anything about IPL…"
         class="chat-input"
         rows="1"
         [disabled]="isLoading()"
@@ -75,13 +60,13 @@
         class="send-btn"
         (click)="sendMessage()"
         [disabled]="!inputText.trim() || isLoading()"
-        title="Send message"
+        title="Send"
       >
         <svg viewBox="0 0 24 24" fill="currentColor">
-          <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+          <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
         </svg>
       </button>
     </div>
-    <p class="input-hint">AI can make mistakes. Verify important information.</p>
+    <p class="input-hint">AskAboutIPL may make mistakes. Always verify important stats.</p>
   </div>
 </div>

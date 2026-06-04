@@ -5,7 +5,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from db import init_db
 from routers import chat
-from routers import user
 
 
 @asynccontextmanager
@@ -25,7 +24,6 @@ app.add_middleware(
 )
 
 app.include_router(chat.router)
-app.include_router(user.router)
 
 
 @app.get("/")
