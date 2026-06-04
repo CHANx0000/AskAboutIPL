@@ -19,4 +19,10 @@ def init_db():
                     gender TEXT    NOT NULL
                 )
             """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS matches (
+                    match_id  BIGINT PRIMARY KEY,
+                    data      JSONB  NOT NULL
+                )
+            """)
         conn.commit()

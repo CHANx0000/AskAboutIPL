@@ -3,107 +3,181 @@
   flex-direction: column;
 }
 
+$sidebar-bg:   #080E1A;
+$text-primary: #E8EEF8;
+$text-muted:   #5A6A8A;
+$accent:       #1B3D8F;
+$accent-hover: #2452B8;
+$border:       #141E30;
+$hover:        #0F1828;
+$active-bg:    rgba(27, 61, 143, 0.18);
+$active-text:  #6B9FFF;
+
 .sidebar {
-  width: 240px;
-  background: #1e293b;
+  width: 260px;
+  background: $sidebar-bg;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
   flex: 1;
-  padding: 20px 12px;
+  padding: 14px 8px;
+  border-right: 1px solid $border;
+  min-height: 0;
+}
 
-  &-brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
-    margin-bottom: 24px;
+// ─── Brand ───────────────────────────────────────────────
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  margin-bottom: 18px;
+  flex-shrink: 0;
+}
+
+.brand-logo {
+  width: 36px;
+  height: 36px;
+  background: white;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  padding: 3px;
+}
+
+.brand-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.brand-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: $text-primary;
+  letter-spacing: -0.01em;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.new-chat-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid $border;
+  background: transparent;
+  color: $text-muted;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+
+  &:hover {
+    background: $hover;
+    color: $text-primary;
+    border-color: #243450;
   }
 
-  &-nav {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    flex: 1;
-  }
+  svg { width: 14px; height: 14px; }
+}
 
-  &-footer {
-    padding-top: 12px;
-    border-top: 1px solid #334155;
+// ─── Sessions ────────────────────────────────────────────
+.sessions-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-height: 0;
+}
+
+.sessions-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: $text-muted;
+  padding: 4px 12px 8px;
+  flex-shrink: 0;
+}
+
+.session-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background 0.12s;
+  flex-shrink: 0;
+
+  &:hover { background: $hover; }
+
+  &.active {
+    background: $active-bg;
+    .session-title { color: $active-text; }
   }
 }
 
-.brand {
-  &-logo {
-    width: 32px;
-    height: 32px;
-    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.02em;
-    flex-shrink: 0;
-  }
-
-  &-name {
-    font-size: 15px;
-    font-weight: 700;
-    color: #f1f5f9;
-    letter-spacing: -0.01em;
-  }
+.session-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: $text-primary;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
 }
 
-.nav {
-  &-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    border-radius: 8px;
-    color: #94a3b8;
-    text-decoration: none;
-    font-size: 14px;
-    font-weight: 500;
-    transition: background 0.15s ease, color 0.15s ease;
-    cursor: pointer;
-    user-select: none;
-
-    &:hover {
-      background: #334155;
-      color: #e2e8f0;
-    }
-
-    &.active {
-      background: rgba(59, 130, 246, 0.12);
-      color: #60a5fa;
-    }
-
-    &--disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-      pointer-events: none;
-    }
-  }
-
-  &-icon {
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0;
-  }
+.session-date {
+  font-size: 11px;
+  color: $text-muted;
 }
 
-.coming-soon {
+// ─── Footer ──────────────────────────────────────────────
+.sidebar-footer {
+  flex-shrink: 0;
+  padding-top: 10px;
+  margin-top: 8px;
+  border-top: 1px solid $border;
+}
+
+.footer-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  color: $text-muted;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: not-allowed;
+  width: 100%;
+  opacity: 0.4;
+}
+
+.soon-badge {
   margin-left: auto;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  background: #334155;
-  padding: 2px 7px;
+  background: #141E30;
+  padding: 2px 6px;
   border-radius: 4px;
-  color: #64748b;
+  color: #3A4F70;
 }
