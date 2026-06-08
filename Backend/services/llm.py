@@ -1,86 +1,166 @@
 import json
+import re
 
 from groq import AsyncGroq
 from config import GROQ_API_KEY, GROQ_MODEL, SYSTEM_PROMPT
+from db import get_connection
 
 _client = AsyncGroq(api_key=GROQ_API_KEY)
 
 tools = [
-  {
-    "type": "function",
-    "function": {
-      "name": "get_current_weather",
-      "description": "Get the current weather in a given location",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "location": {
-            "type": "string",
-            "description": "The city and state, e.g. San Francisco, CA",
-          },
-          "unit": {"type": "string", "enum": ["celsius", "fahrenheit"]},
+    {
+        "type": "function",
+        "function": {
+            "name": "get_ipl_match_details",
+            "description": (
+                "Fetch IPL match details from the database. "
+                "Use any combination of match_date, teams, stage_name, or year. "
+                "At least one parameter should be provided."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "match_date": {
+                        "type": "string",
+                        "description": "Date of the match in YYYY-MM-DD format",
+                    },
+                    "teams": {
+                        "type": "string",
+                        "description": "Team names, e.g. 'Mumbai Indians vs Chennai Super Kings' or just 'Mumbai Indians'",
+                    },
+                    "stage_name": {
+                        "type": "string",
+                        "description": "Tournament stage, e.g. 'Final', 'Qualifier 1', 'Eliminator'",
+                    },
+                    "year": {
+                        "type": "integer",
+                        "description": "IPL season year, e.g. 2023",
+                    },
+                },
+                "required": [],
+            },
         },
-        "required": ["location"],
-      },
     }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "get_current_time",
-      "description": "Get the current time in a given location",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "location": {
-            "type": "string",
-            "description": "The city and state, e.g. San Francisco, CA",
-          },
-        },
-        "required": ["location"],
-      },
-    }
-  }
 ]
 
-def get_current_time(location: str) -> str:
-    """Get the current time in a given location"""
 
+def _compute_innings_totals(innings_data: list) -> list[str]:
+    summaries = []
+    for innings in innings_data:
+        team = innings.get("team", "Unknown")
+        runs = 0
+        wickets = 0
+        for over in innings.get("overs", []):
+            for delivery in over.get("deliveries", []):
+                runs += delivery.get("runs", {}).get("total", 0)
+                if "wickets" in delivery:
+                    wickets += len(delivery["wickets"])
+        summaries.append(f"{team}: {runs}/{wickets}")
+    return summaries
+
+
+def get_ipl_match_details(
+    match_date: str = None,
+    teams: str = None,
+    stage_name: str = None,
+    year: int = None,
+) -> str:
     print()
-    print(f"[5] TOOL DEF | get_current_time() called with location='{location}'")
-    print()
-
-    result = f"The current time in {location} is 3:45 PM."
-
-    print()
-    print(f"[6] TOOL DEF → LLM SERVICE | Tool result: '{result}'")
-    print()
-
-    return result
-
-def get_current_weather(location: str, unit: str = "fahrenheit") -> str:
-    """Get the current weather in a given location"""
-
-    print()
-    print(f"[5] TOOL DEF | get_current_weather() called with location='{location}', unit='{unit}'")
-    print()
-
-    result = f"The current weather in {location} is 72 degrees {unit}."
-
-    print()
-    print(f"[6] TOOL DEF → LLM SERVICE | Tool result: '{result}'")
+    print(f"[5] TOOL | get_ipl_match_details() — date={match_date!r}  teams={teams!r}  stage={stage_name!r}  year={year!r}")
     print()
 
-    return result
+    # ── Build WHERE clause dynamically ───────────────────────────────────────
+    conditions: list[str] = []
+    params: list = []
+
+    if match_date:
+        conditions.append("data->'info'->'dates' @> %s::jsonb")
+        params.append(json.dumps([match_date]))
+
+    if teams:
+        for team in re.split(r"\s+vs\s+", teams.strip(), flags=re.IGNORECASE):
+            team = team.strip()
+            if team:
+                conditions.append("data->'info'->'teams' @> %s::jsonb")
+                params.append(json.dumps([team]))
+
+    if stage_name:
+        conditions.append("data->'info'->'event'->>'stage' ILIKE %s")
+        params.append(f"%{stage_name}%")
+
+    if year:
+        conditions.append("data->'info'->>'season' = %s")
+        params.append(str(year))
+
+    if not conditions:
+        return "Please provide at least one filter: date, teams, stage, or year."
+
+    where = " AND ".join(conditions)
+    sql = f"SELECT match_id, data FROM matches WHERE {where} ORDER BY match_id LIMIT 5"
+
+    print(f"    SQL : {sql}")
+    print(f"    params : {params}")
+
+    # ── Execute ───────────────────────────────────────────────────────────────
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(sql, params)
+                rows = cur.fetchall()
+    except Exception as exc:
+        print(f"    DB ERROR: {exc}")
+        return f"Database error: {exc}"
+
+    if not rows:
+        return "No IPL matches found for the given criteria."
+
+    # ── Format results ────────────────────────────────────────────────────────
+    results: list[str] = []
+    for row in rows:
+        data = row["data"]
+        info = data.get("info", {})
+
+        dates_str   = ", ".join(info.get("dates", []))
+        teams_str   = " vs ".join(info.get("teams", []))
+        venue       = info.get("venue", "Unknown venue")
+        season      = info.get("season", "Unknown")
+        stage       = info.get("event", {}).get("stage", "")
+        toss        = info.get("toss", {})
+        outcome     = info.get("outcome", {})
+        winner      = outcome.get("winner", "Unknown")
+        by          = outcome.get("by", {})
+        pom         = ", ".join(info.get("player_of_match", []))
+
+        by_str = ""
+        if "runs" in by:
+            by_str = f" by {by['runs']} runs"
+        elif "wickets" in by:
+            by_str = f" by {by['wickets']} wickets"
+
+        innings_lines = _compute_innings_totals(data.get("innings", []))
+
+        lines = [
+            f"Match ID : {row['match_id']}",
+            f"Date     : {dates_str}",
+            f"Season   : {season}" + (f"  |  Stage: {stage}" if stage else ""),
+            f"Teams    : {teams_str}",
+            f"Venue    : {venue}",
+            f"Toss     : {toss.get('winner', '')} won, chose to {toss.get('decision', '')}",
+            f"Scores   : {' | '.join(innings_lines)}",
+            f"Result   : {winner} won{by_str}",
+        ]
+        if pom:
+            lines.append(f"Player of Match : {pom}")
+
+        results.append("\n".join(lines))
+
+    result_str = "\n\n---\n\n".join(results)
+    print(f"[6] TOOL RESULT →\n{result_str}\n")
+    return result_str
+
 
 async def chat_completion(message: str, history: list[dict]) -> str:
-    """
-    Send a message to the Groq LLM and return the assistant reply.
-
-    Args:
-        message:  The latest user message.
-        history:  Previous turns as [{"role": "user"|"assistant", "content": "..."}].
-    """
+    """Send a message to the Groq LLM and return the assistant reply."""
 
     print()
     print(f"[3] BACKEND → LLM SERVICE | chat_completion() called")
@@ -95,10 +175,8 @@ async def chat_completion(message: str, history: list[dict]) -> str:
     ]
 
     print()
-    print(f"[4] LLM SERVICE → GROQ API | Sending first request to Groq")
-    print(f"    model      : {GROQ_MODEL}")
-    print(f"    total msgs : {len(messages)}  (system + history + new user message)")
-    print(f"    tools      : {[t['function']['name'] for t in tools]}")
+    print(f"[4] LLM SERVICE → GROQ API | First request")
+    print(f"    model : {GROQ_MODEL}  |  tools : {[t['function']['name'] for t in tools]}")
     print()
 
     response = await _client.chat.completions.create(
@@ -109,40 +187,31 @@ async def chat_completion(message: str, history: list[dict]) -> str:
         tools=tools,
         tool_choice="auto",
     )
-    
-    print('This is the response before adding to the assistant:', response)
 
     assistant_message = response.choices[0].message
 
-    print('This is the assistant message:', assistant_message)
-
-    # ── Tool-call path ───────────────────────────────────────────────────────
+    # ── Tool-call path ────────────────────────────────────────────────────────
     if assistant_message.tool_calls:
-
         print()
-        print(f"[4b] GROQ API → LLM SERVICE | Model wants to call a tool (finish_reason=tool_calls)")
-        print(f"     tool_calls : {[tc.function.name for tc in assistant_message.tool_calls]}")
+        print(f"[4b] Model requested tools: {[tc.function.name for tc in assistant_message.tool_calls]}")
         print()
 
         messages.append(assistant_message)
 
         for tool_call in assistant_message.tool_calls:
             args = json.loads(tool_call.function.arguments)
+            print(f"[4c] Dispatching '{tool_call.function.name}' with args: {args}")
 
-            print()
-            print(f"[4c] LLM SERVICE | Dispatching tool '{tool_call.function.name}' with args: {args}")
-            print()
-
-            if tool_call.function.name == "get_current_weather":
-                result = get_current_weather(
-                    location=args["location"],
-                    unit=args.get("unit", "fahrenheit"),
+            if tool_call.function.name == "get_ipl_match_details":
+                result = get_ipl_match_details(
+                    match_date=args.get("match_date"),
+                    teams=args.get("teams"),
+                    stage_name=args.get("stage_name"),
+                    year=args.get("year"),
                 )
-            elif tool_call.function.name == "get_current_time":
-                result = get_current_time(location=args["location"])
             else:
                 result = f"Unknown tool: {tool_call.function.name}"
-            print(result)
+
             messages.append({
                 "role": "tool",
                 "tool_call_id": tool_call.id,
@@ -150,8 +219,7 @@ async def chat_completion(message: str, history: list[dict]) -> str:
             })
 
         print()
-        print(f"[7] LLM SERVICE → GROQ API | Sending second request with tool result")
-        print(f"    total msgs now : {len(messages)}  (added assistant tool-call msg + tool result msg)")
+        print(f"[7] LLM SERVICE → GROQ API | Second request with tool result ({len(messages)} msgs)")
         print()
 
         final = await _client.chat.completions.create(
@@ -162,18 +230,9 @@ async def chat_completion(message: str, history: list[dict]) -> str:
         )
 
         final_content = final.choices[0].message.content
-
-        print()
-        print(f"[8] GROQ API → LLM SERVICE | Final text response received")
-        print(f"    reply : '{final_content}'")
-        print()
-
+        print(f"[8] Final reply: '{final_content}'")
         return final_content
 
-    # ── Direct reply path (no tool needed) ──────────────────────────────────
-    print()
-    print(f"[4b] GROQ API → LLM SERVICE | Direct reply (no tool call needed)")
-    print(f"     reply : '{assistant_message.content}'")
-    print()
-
+    # ── Direct reply path ─────────────────────────────────────────────────────
+    print(f"[4b] Direct reply: '{assistant_message.content}'")
     return assistant_message.content
