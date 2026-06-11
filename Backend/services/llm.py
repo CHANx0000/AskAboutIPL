@@ -4,6 +4,7 @@ import re
 from groq import AsyncGroq
 from config import GROQ_API_KEY, GROQ_MODEL, SYSTEM_PROMPT
 from db import get_connection
+from normalize_entities import VENUE_ALIASES
 
 _client = AsyncGroq(api_key=GROQ_API_KEY)
 
@@ -122,13 +123,15 @@ def get_ipl_match_details(
 
         dates_str   = ", ".join(info.get("dates", []))
         teams_str   = " vs ".join(info.get("teams", []))
-        venue       = info.get("venue", "Unknown venue")
+        raw_venue   = info.get("venue", "Unknown venue")
+        venue       = VENUE_ALIASES.get(raw_venue, raw_venue)
         season      = info.get("season", "Unknown")
         stage       = info.get("event", {}).get("stage", "")
         toss        = info.get("toss", {})
         outcome     = info.get("outcome", {})
         winner      = outcome.get("winner", "Unknown")
         by          = outcome.get("by", {})
+        method      = outcome.get("method", "")
         pom         = ", ".join(info.get("player_of_match", []))
 
         by_str = ""
@@ -136,6 +139,8 @@ def get_ipl_match_details(
             by_str = f" by {by['runs']} runs"
         elif "wickets" in by:
             by_str = f" by {by['wickets']} wickets"
+        if method:
+            by_str += f" ({method})"
 
         innings_lines = _compute_innings_totals(data.get("innings", []))
 
