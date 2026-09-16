@@ -77,6 +77,84 @@ $bg:           #080E1A;
   }
 }
 
+// ─── Markdown rendering (assistant messages only) ──────────
+.markdown-body {
+  white-space: normal;
+  font-size: 14px;
+  line-height: 1.75;
+  word-break: break-word;
+  color: $text-primary;
+
+  // Paragraphs
+  p { margin: 0 0 10px; &:last-child { margin-bottom: 0; } }
+
+  // Headings
+  h1, h2, h3 {
+    color: $text-primary;
+    font-weight: 600;
+    margin: 14px 0 6px;
+    &:first-child { margin-top: 0; }
+  }
+  h1 { font-size: 16px; }
+  h2 { font-size: 15px; }
+  h3 { font-size: 14px; }
+
+  // Bold / italic
+  strong { font-weight: 600; color: #C8D8F5; }
+  em     { font-style: italic; color: $text-muted; }
+
+  // Tables
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin: 10px 0;
+
+    th {
+      background: #0F1929;
+      color: #A0B8E0;
+      font-weight: 600;
+      text-align: left;
+      padding: 7px 12px;
+      border-bottom: 1px solid #2A3A5A;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 6px 12px;
+      border-bottom: 1px solid #151F30;
+      color: $text-primary;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #111C2E; }
+  }
+
+  // Inline code
+  code {
+    background: #0F1929;
+    color: #7EB8F7;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+
+  // Lists
+  ul, ol {
+    padding-left: 20px;
+    margin: 6px 0;
+    li { margin: 3px 0; }
+  }
+
+  // Horizontal rule
+  hr {
+    border: none;
+    border-top: 1px solid $border;
+    margin: 12px 0;
+  }
+}
+
 .user-message {
   background: $accent;
   color: white;

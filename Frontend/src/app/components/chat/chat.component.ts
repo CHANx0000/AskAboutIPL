@@ -4,10 +4,11 @@ import { DatePipe } from '@angular/common';
 import { ChatService, ChatMessage } from '../../services/chat.service';
 import { SessionService } from '../../services/session.service';
 import { Message } from '../../shared/models/chat.model';
+import { MarkdownPipe } from '../../shared/pipes/markdown.pipe';
 
 @Component({
   selector: 'app-chat',
-  imports: [FormsModule, DatePipe],
+  imports: [FormsModule, DatePipe, MarkdownPipe],
   templateUrl: './chat.component.html',
   styleUrl: './chat.component.scss',
 })

@@ -18,7 +18,11 @@
           [class.user-message]="message.role === 'user'"
           [class.assistant-message]="message.role === 'assistant'"
         >
-          <p class="message-content">{{ message.content }}</p>
+          @if (message.role === 'assistant') {
+            <div class="message-content markdown-body" [innerHTML]="message.content | markdown"></div>
+          } @else {
+            <p class="message-content">{{ message.content }}</p>
+          }
           <span class="message-time">{{ message.timestamp | date: 'shortTime' }}</span>
         </div>
 
